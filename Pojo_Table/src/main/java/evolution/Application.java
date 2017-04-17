@@ -1,6 +1,9 @@
 package evolution;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -26,16 +29,39 @@ public class Application {
 		return null;
 	}
 	
-	public static String create(Class<?> clazz) {
+	public static List<String> createTables(String path, String basePath) {
+		List<String> createStatements = new LinkedList<>();
+		List<Class<?>> classes = null;
+		classes = FileUtil.classes(path, basePath, Arrays.asList(Entity.class), classes);
+		for (Class<?> clazz : classes) {
+			createStatements.add(createTable(clazz));
+		}
+		return createStatements;
+	}
+	
+	@Test
+	public void testCreateTables() {
+		String basePath = "/Users/chenli/Desktop/Playground/Git/Pojo_Table/Pojo_Table/src/main/java";
+		String path = "/Users/chenli/Desktop/Playground/Git/Pojo_Table/Pojo_Table/src/main/java/evolution";
+		List<String> sqls = createTables(path, basePath);
+		System.out.println(sqls);
+	}
+	
+	public static StringBuilder removeComma(StringBuilder stringBuilder) {
+		int length = stringBuilder.length();
+		return stringBuilder.replace(length - 2, length, "");
+	}
+	
+	public static String createTable(Class<?> clazz) {
 		if (clazz.getAnnotation(Entity.class) == null) {
 			return null;
 		}
-		StringBuilder create = new StringBuilder("CREATE TABLE ");
+		StringBuilder createStatement = new StringBuilder("CREATE TABLE ");
 		Table table = clazz.getAnnotation(Table.class);
 		if (table == null) {
-			create.append(underScore(clazz.getSimpleName()) + "(");
+			createStatement.append(underScore(clazz.getSimpleName()) + "(");
 		} else {
-			create.append(table.name() + "(");
+			createStatement.append(table.name() + "(");
 		}
 		Field[] fields = clazz.getDeclaredFields();
 		for (Field field : fields) {
@@ -43,26 +69,26 @@ public class Application {
 			String sqlType = sqlType(field.getType());
 			Column column = field.getAnnotation(Column.class);
 			if (field.getAnnotation(Id.class) != null) {
-				create.append(underScoredFieldName + " " + sqlType + " PRIMARY KEY ");
+				createStatement.append(underScoredFieldName + " " + sqlType + " PRIMARY KEY, ");
 				if (field.getAnnotation(GeneratedValue.class) != null) {
-					create.append("AUTO_INCREMENT, ");
+					removeComma(createStatement).append(" AUTO_INCREMENT, ");
 				}
 			} else if (column == null) {
 				continue;
 			} else {
 				String columnName = column.name();
 				if ("".equals(columnName)) {
-					create.append(underScoredFieldName + " " + sqlType + ", ");
+					createStatement.append(underScoredFieldName + " " + sqlType + ", ");
 				} else {
-					create.append(columnName + " " + sqlType + ", ");
+					createStatement.append(columnName + " " + sqlType + ", ");
 				}
 			}
 		}
-		return create.replace(create.length() - 2, create.length(), "").append(");").toString();
+		return removeComma(createStatement).append(");").toString();
 	}
 	
 	@Test
-	public void test() {
-		System.out.println(Application.create(AnyEntity.class));
+	public void testCreateTable() {
+		System.out.println(Application.createTable(AnyEntity.class));
 	}
 }

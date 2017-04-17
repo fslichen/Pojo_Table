@@ -11,6 +11,11 @@
 			<artifactId>hibernate-core</artifactId>
 			<version>5.2.9.Final</version>
 		</dependency>
+		<dependency>
+			<groupId>com.evolution</groupId>
+			<artifactId>File</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
